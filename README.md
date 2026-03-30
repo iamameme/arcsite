@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Next.js Vibe Starter
 
-## Getting Started
+Starter kit for shipping quickly with:
 
-First, run the development server:
+- Next.js 16 + App Router
+- Drizzle ORM + PostgreSQL
+- shadcn/ui-style primitives
+- Recharts demo page
+- Coolify-friendly build output
+
+## Quick Start
+
+1. Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Copy `.env.example` to `.env` and update values.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Start development:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm dev
+```
 
-## Learn More
+Open http://localhost:3000
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm dev          # normal Next.js dev server
+pnpm dev:env      # auto-restarts dev server when .env* files change
+pnpm lint
+pnpm build
+pnpm start
+pnpm start:standalone
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Database (Drizzle + Postgres)
 
-## Deploy on Vercel
+Files:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `db/schema.ts`: Drizzle schema
+- `db/client.ts`: Postgres client + Drizzle instance
+- `drizzle.config.ts`: Drizzle CLI config (loads `.env*` using `@next/env`)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Commands:
+
+```bash
+pnpm db:generate  # create SQL migrations from schema changes
+pnpm db:migrate   # apply migrations
+pnpm db:push      # push schema directly (fast iteration)
+pnpm db:studio    # open Drizzle Studio
+```
+
+DB health endpoint:
+
+- `GET /api/health/db`
+
+## Charts Demo
+
+Visit:
+
+- `/charts`
+
+This page demonstrates multiple Recharts visualizations styled with shadcn-style UI card components.
+
+## Coolify Notes
+
+- `next.config.ts` is set to `output: "standalone"` for container-friendly deployments.
+- `pnpm start:standalone` runs `.next/standalone/server.js`.
+- `HOSTNAME` and `PORT` are included in `.env.example`.
+- Runtime env usage is ready for self-hosting flows.
+
+## Coolify Template
+
+### Option A: Dockerfile Deploy (recommended)
+
+Use the repo `Dockerfile` directly.
+
+- Build Pack: `Dockerfile`
+- Dockerfile Location: `./Dockerfile`
+- Exposed Port: `3000`
+
+Environment variables:
+
+- `DATABASE_URL=postgresql://...`
+- `HOSTNAME=0.0.0.0`
+- `PORT=3000`
+- `NEXT_TELEMETRY_DISABLED=1`
+
+### Option B: Build/Start Commands
+
+If you are not using Dockerfile mode, use:
+
+- Build Command: `pnpm install --frozen-lockfile && pnpm build`
+- Start Command: `pnpm start:standalone`
+- Port: `3000`
+
+Environment variables:
+
+- `DATABASE_URL=postgresql://...`
+- `HOSTNAME=0.0.0.0`
+- `PORT=3000`
+- `NEXT_TELEMETRY_DISABLED=1`
