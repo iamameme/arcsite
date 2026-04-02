@@ -1,5 +1,5 @@
 const ARDB_API_BASE_URL = "https://ardb.app/api";
-export const ARDB_STATIC_BASE_URL = "https://ardb.app";
+export const ARDB_STATIC_BASE_URL = "https://ardb.app/static";
 
 const DEFAULT_REVALIDATE_SECONDS = 60 * 30;
 
