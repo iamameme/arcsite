@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import {
   CalendarClock,
@@ -231,33 +230,29 @@ export function QuestVisualizer({ data }: QuestVisualizerProps) {
 
   return (
     <div className="flex flex-col min-h-0 h-full overflow-hidden">
-      {/* Tactical Header */}
-      <header className="relative border-b border-border bg-card shrink-0">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,var(--primary)/5_50%,transparent_100%)]" />
-        <div className="relative px-4 py-6 md:px-6 md:py-8">
-          <div className="flex items-start justify-between gap-4 mb-6">
+      {/* Compact Header */}
+      <header className="border-b border-border bg-card/50 shrink-0 px-4 py-3 md:px-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded bg-primary/10 flex items-center justify-center">
+              <Crosshair className="size-4 text-primary" />
+            </div>
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Crosshair className="size-5 text-primary" />
-                <span className="text-xs font-mono uppercase tracking-widest text-primary">
-                  Mission Database
-                </span>
-              </div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                Active Contracts
-              </h1>
-              <p className="text-muted-foreground mt-1 text-sm md:text-base">
-                {data.quests.length} missions logged / {filteredQuests.length} visible
+              <h1 className="text-lg font-semibold">Contracts</h1>
+              <p className="text-xs text-muted-foreground">
+                {filteredQuests.length} of {data.quests.length} missions
               </p>
             </div>
           </div>
-
-          {/* Stats Row */}
-          <div className="grid grid-cols-4 gap-2 md:gap-4">
-            <StatBlock value={data.quests.length} label="TOTAL" />
-            <StatBlock value={filteredQuests.length} label="ACTIVE" accent />
-            <StatBlock value={visiblePinnedCount} label="TRACKED" />
-            <StatBlock value={visibleCompletedCount} label="CLEARED" />
+          <div className="flex items-center gap-4 text-xs font-mono">
+            <div className="text-center">
+              <span className="text-primary font-bold text-sm">{visiblePinnedCount}</span>
+              <span className="text-muted-foreground ml-1">tracked</span>
+            </div>
+            <div className="text-center">
+              <span className="text-accent font-bold text-sm">{visibleCompletedCount}</span>
+              <span className="text-muted-foreground ml-1">done</span>
+            </div>
           </div>
         </div>
       </header>
@@ -464,19 +459,6 @@ export function QuestVisualizer({ data }: QuestVisualizerProps) {
   );
 }
 
-function StatBlock({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
-  return (
-    <div className="text-center py-3 px-2 bg-secondary/50 rounded-md border border-border">
-      <p className={cn("text-2xl md:text-3xl font-bold font-mono", accent && "text-primary")}>
-        {value}
-      </p>
-      <p className="text-[10px] md:text-xs font-mono uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-    </div>
-  );
-}
-
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
@@ -551,12 +533,10 @@ function QuestCard({
       {/* Image or Placeholder */}
       <div className="relative h-32 bg-secondary overflow-hidden">
         {image ? (
-          <Image
+          <img
             src={image}
             alt={quest.title}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
@@ -593,11 +573,9 @@ function QuestCard({
         {quest.trader?.iconUrl && (
           <div className="absolute bottom-2 left-2">
             <div className="size-10 rounded border-2 border-card overflow-hidden bg-card shadow-md">
-              <Image
+              <img
                 src={quest.trader.iconUrl}
                 alt={quest.trader.name ?? "Trader"}
-                width={40}
-                height={40}
                 className="size-full object-cover"
               />
             </div>
@@ -703,12 +681,10 @@ function QuestListItem({
       {/* Image */}
       <div className="relative size-14 rounded overflow-hidden bg-secondary shrink-0">
         {image ? (
-          <Image
+          <img
             src={image}
             alt={quest.title}
-            fill
-            className="object-cover"
-            sizes="56px"
+            className="absolute inset-0 size-full object-cover"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -812,12 +788,10 @@ function QuestDetailPanel({
         <div className="relative">
           {image ? (
             <div className="relative h-48">
-              <Image
+              <img
                 src={image}
                 alt={quest.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 512px) 100vw, 512px"
+                className="absolute inset-0 size-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
             </div>
@@ -1007,12 +981,10 @@ function ItemList({ title, items, type }: ItemListProps) {
           {items.slice(0, 5).map((item) => (
             <div key={`${title}-${item.id}`} className="flex items-center gap-2">
               {item.iconUrl ? (
-                <Image
+                <img
                   src={item.iconUrl}
                   alt={item.name}
-                  width={20}
-                  height={20}
-                  className="rounded border border-border"
+                  className="size-5 rounded border border-border object-cover"
                 />
               ) : (
                 <div className="size-5 rounded bg-muted border border-border" />
