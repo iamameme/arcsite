@@ -7,7 +7,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "ardb.app",
-        pathname: "/static/**",
       },
       {
         protocol: "https",

@@ -30,9 +30,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}
     >
-      <body className="h-full">
+      <body className="min-h-screen overflow-hidden">
         <AppShell>{children}</AppShell>
       </body>
     </html>

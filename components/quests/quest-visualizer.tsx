@@ -230,9 +230,9 @@ export function QuestVisualizer({ data }: QuestVisualizerProps) {
     });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col min-h-0 h-full overflow-hidden">
       {/* Tactical Header */}
-      <header className="relative border-b border-border bg-card">
+      <header className="relative border-b border-border bg-card shrink-0">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,var(--primary)/5_50%,transparent_100%)]" />
         <div className="relative px-4 py-6 md:px-6 md:py-8">
           <div className="flex items-start justify-between gap-4 mb-6">
@@ -263,7 +263,7 @@ export function QuestVisualizer({ data }: QuestVisualizerProps) {
       </header>
 
       {/* Filter Bar */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
+      <div className="shrink-0 z-30 bg-background/95 backdrop-blur border-b border-border">
         <div className="px-4 py-3 md:px-6">
           <div className="flex items-center gap-2 flex-wrap">
             {/* Search */}
@@ -397,7 +397,7 @@ export function QuestVisualizer({ data }: QuestVisualizerProps) {
       </div>
 
       {/* Quest Grid/List */}
-      <main className="flex-1 overflow-auto px-4 py-6 md:px-6">
+      <main className="flex-1 min-h-0 overflow-y-auto px-4 py-6 md:px-6">
         {groupedQuests.length === 0 ? (
           <EmptyState onReset={resetFilters} />
         ) : (
