@@ -13,7 +13,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Bell,
-  User,
   LogIn,
   Menu,
   X,
@@ -23,13 +22,6 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface NavItem {
   label: string;
@@ -104,25 +96,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary" />
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2">
-                <User className="size-4" />
-                <span className="hidden sm:inline">Sign In</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem disabled>
-                <LogIn className="mr-2 size-4" />
-                Sign in with Steam
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>
-                <User className="mr-2 size-4" />
-                Create Account
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button variant="ghost" size="sm" className="gap-2" disabled>
+            <LogIn className="size-4" />
+            <span className="hidden sm:inline">Sign In</span>
+          </Button>
         </div>
       </header>
 
