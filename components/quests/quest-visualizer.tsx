@@ -230,7 +230,7 @@ export function QuestVisualizer({ data }: QuestVisualizerProps) {
     });
 
   return (
-    <div className="min-h-screen">
+    <div className="flex flex-col h-full">
       {/* Tactical Header */}
       <header className="relative border-b border-border bg-card">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,var(--primary)/5_50%,transparent_100%)]" />
@@ -397,7 +397,7 @@ export function QuestVisualizer({ data }: QuestVisualizerProps) {
       </div>
 
       {/* Quest Grid/List */}
-      <main className="px-4 py-6 md:px-6">
+      <main className="flex-1 overflow-auto px-4 py-6 md:px-6">
         {groupedQuests.length === 0 ? (
           <EmptyState onReset={resetFilters} />
         ) : (

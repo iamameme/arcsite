@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vibe Starter Kit",
-  description: "Next.js starter with Drizzle, shadcn/ui, and Recharts.",
+  title: "ARCSITE | Arc Raiders Companion",
+  description: "Track contracts, manage loadouts, and conquer the wasteland in Arc Raiders.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0c0a09",
 };
 
 export default function RootLayout({
@@ -25,9 +30,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="h-full">
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }
