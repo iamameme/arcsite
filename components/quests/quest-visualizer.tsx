@@ -4,20 +4,21 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import {
   CalendarClock,
-  CheckCircle2,
+  Check,
+  ChevronDown,
   ChevronRight,
   Circle,
+  Crosshair,
   Filter,
-  Gift,
+  Grid3X3,
+  List,
   MapPin,
   Package,
   Search,
   Sparkles,
   Star,
-  Swords,
   Target,
   Trophy,
-  UserRound,
   X,
   Zap,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 type GroupByMode = "trader" | "map" | "oneRound";
+type ViewMode = "grid" | "list";
 
 type VisualizerFilters = {
   search: string;
@@ -44,6 +46,7 @@ const FILTERS_STORAGE_KEY = "arc-quests:filters:v1";
 const PINNED_STORAGE_KEY = "arc-quests:pinned:v1";
 const COMPLETED_STORAGE_KEY = "arc-quests:completed:v1";
 const SELECTED_STORAGE_KEY = "arc-quests:selected:v1";
+const VIEW_MODE_STORAGE_KEY = "arc-quests:view:v1";
 
 const DEFAULT_FILTERS: VisualizerFilters = {
   search: "",
@@ -55,16 +58,6 @@ const DEFAULT_FILTERS: VisualizerFilters = {
   hideCompleted: false,
   showPinnedOnly: false,
 };
-
-// Quest-themed placeholder images for visual variety
-const QUEST_IMAGES = [
-  "https://images.unsplash.com/photo-1614851099362-4b6e13f4b0d0?w=600&h=400&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=600&h=400&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&h=400&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?w=600&h=400&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&h=400&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1552820728-8b83bb6b2b0b?w=600&h=400&fit=crop&q=80",
-];
 
 function formatDate(isoDate: string | undefined): string | undefined {
   if (!isoDate) return undefined;
@@ -82,17 +75,15 @@ function summarizeItems(items: QuestItemRef[], limit = 2): string[] {
 
 function buildGroupKey(quest: QuestRecord, groupBy: GroupByMode): string {
   if (groupBy === "map") return quest.maps[0]?.name ?? "Unknown Map";
-  if (groupBy === "oneRound") return quest.oneRound ? "One-Round Quests" : "Multi-Raid Quests";
+  if (groupBy === "oneRound") return quest.oneRound ? "Single Raid" : "Multi-Raid";
   return quest.trader?.name ?? "Unknown Trader";
 }
 
-function getQuestImage(quest: QuestRecord, index: number = 0): string {
+function getQuestImage(quest: QuestRecord): string | null {
   if (quest.imageUrl) return quest.imageUrl;
   if (quest.trader?.iconUrl) return quest.trader.iconUrl;
   if (quest.maps[0]?.imageUrl) return quest.maps[0].imageUrl;
-  // Use a consistent placeholder based on quest ID hash
-  const hash = quest.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return QUEST_IMAGES[(hash + index) % QUEST_IMAGES.length];
+  return null;
 }
 
 function normalizeFilterValue(value: string, allowedValues: string[]): string {
@@ -131,6 +122,7 @@ export function QuestVisualizer({ data }: QuestVisualizerProps) {
     SELECTED_STORAGE_KEY,
     null
   );
+  const [viewMode, setViewMode] = useLocalStorageState<ViewMode>(VIEW_MODE_STORAGE_KEY, "grid");
   const [showFilters, setShowFilters] = useState(false);
 
   const pinnedSet = useMemo(() => new Set(pinnedQuestIds), [pinnedQuestIds]);
@@ -238,220 +230,228 @@ export function QuestVisualizer({ data }: QuestVisualizerProps) {
     });
 
   return (
-    <div className="min-h-screen font-[family-name:var(--font-quest-body)]">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1a1d29] via-[#252836] to-[#1a1d29] p-6 md:p-10">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=1920&q=80')] bg-cover bg-center opacity-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1d29] via-transparent to-transparent" />
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex items-center justify-center size-12 rounded-2xl bg-primary/20 text-primary">
-              <Swords className="size-6" />
+    <div className="min-h-screen">
+      {/* Tactical Header */}
+      <header className="relative border-b border-border bg-card">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,var(--primary)/5_50%,transparent_100%)]" />
+        <div className="relative px-4 py-6 md:px-6 md:py-8">
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Crosshair className="size-5 text-primary" />
+                <span className="text-xs font-mono uppercase tracking-widest text-primary">
+                  Mission Database
+                </span>
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                Active Contracts
+              </h1>
+              <p className="text-muted-foreground mt-1 text-sm md:text-base">
+                {data.quests.length} missions logged / {filteredQuests.length} visible
+              </p>
             </div>
-            <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold uppercase tracking-wider">
-              Mission Control
-            </span>
           </div>
-          
-          <h1 className="text-4xl md:text-5xl font-bold text-white font-[family-name:var(--font-quest-display)] tracking-tight mb-3">
-            Quest Board
-          </h1>
-          <p className="text-lg text-white/70 max-w-2xl mb-8">
-            Track your missions, manage objectives, and claim your rewards. Every quest brings you closer to becoming a legend.
-          </p>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            <StatCard 
-              icon={<Target className="size-5" />}
-              value={data.quests.length}
-              label="Total Quests"
-              color="primary"
-            />
-            <StatCard 
-              icon={<Zap className="size-5" />}
-              value={filteredQuests.length}
-              label="Available"
-              color="teal"
-            />
-            <StatCard 
-              icon={<Star className="size-5" />}
-              value={visiblePinnedCount}
-              label="Pinned"
-              color="amber"
-            />
-            <StatCard 
-              icon={<Trophy className="size-5" />}
-              value={visibleCompletedCount}
-              label="Completed"
-              color="emerald"
-            />
+          {/* Stats Row */}
+          <div className="grid grid-cols-4 gap-2 md:gap-4">
+            <StatBlock value={data.quests.length} label="TOTAL" />
+            <StatBlock value={filteredQuests.length} label="ACTIVE" accent />
+            <StatBlock value={visiblePinnedCount} label="TRACKED" />
+            <StatBlock value={visibleCompletedCount} label="CLEARED" />
           </div>
         </div>
-      </section>
+      </header>
 
       {/* Filter Bar */}
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border py-4 mt-6 -mx-4 px-4 md:-mx-6 md:px-6">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search quests, items, locations..."
-              className="w-full h-12 pl-12 pr-4 rounded-2xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              value={safeFilters.search}
-              onChange={(e) => updateFilter("search", e.target.value)}
-            />
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
+        <div className="px-4 py-3 md:px-6">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[180px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search missions..."
+                className="w-full h-9 pl-9 pr-3 text-sm rounded-md border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+                value={safeFilters.search}
+                onChange={(e) => updateFilter("search", e.target.value)}
+              />
+            </div>
+
+            {/* Quick Filters */}
+            <Button
+              variant={safeFilters.showPinnedOnly ? "default" : "outline"}
+              size="sm"
+              className="gap-1.5 h-9"
+              onClick={() => updateFilter("showPinnedOnly", !safeFilters.showPinnedOnly)}
+            >
+              <Star className={cn("size-3.5", safeFilters.showPinnedOnly && "fill-current")} />
+              Tracked
+            </Button>
+
+            <Button
+              variant={safeFilters.hideCompleted ? "default" : "outline"}
+              size="sm"
+              className="gap-1.5 h-9"
+              onClick={() => updateFilter("hideCompleted", !safeFilters.hideCompleted)}
+            >
+              <Check className="size-3.5" />
+              Hide Done
+            </Button>
+
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              size="sm"
+              className="gap-1.5 h-9"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="size-3.5" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.5 rounded bg-primary/20 text-primary text-xs font-medium">
+                  {activeFilterCount}
+                </span>
+              )}
+              <ChevronDown className={cn("size-3.5 transition-transform", showFilters && "rotate-180")} />
+            </Button>
+
+            <div className="flex-1" />
+
+            {/* View Toggle */}
+            <div className="flex border border-border rounded-md overflow-hidden">
+              <button
+                type="button"
+                className={cn(
+                  "p-2 transition-colors",
+                  viewMode === "grid" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"
+                )}
+                onClick={() => setViewMode("grid")}
+                title="Grid view"
+              >
+                <Grid3X3 className="size-4" />
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "p-2 transition-colors border-l border-border",
+                  viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"
+                )}
+                onClick={() => setViewMode("list")}
+                title="List view"
+              >
+                <List className="size-4" />
+              </button>
+            </div>
           </div>
-          
-          <Button
-            variant={showFilters ? "default" : "outline"}
-            className="h-12 px-5 rounded-2xl gap-2"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="size-4" />
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="ml-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-semibold">
-                {activeFilterCount}
-              </span>
-            )}
-          </Button>
 
-          <Button
-            variant={safeFilters.showPinnedOnly ? "default" : "outline"}
-            className="h-12 px-5 rounded-2xl gap-2"
-            onClick={() => updateFilter("showPinnedOnly", !safeFilters.showPinnedOnly)}
-          >
-            <Star className={cn("size-4", safeFilters.showPinnedOnly && "fill-current")} />
-            Pinned
-          </Button>
-
-          <Button
-            variant={safeFilters.hideCompleted ? "default" : "outline"}
-            className="h-12 px-5 rounded-2xl gap-2"
-            onClick={() => updateFilter("hideCompleted", !safeFilters.hideCompleted)}
-          >
-            <CheckCircle2 className="size-4" />
-            {safeFilters.hideCompleted ? "Active Only" : "All Quests"}
-          </Button>
+          {/* Expanded Filters */}
+          {showFilters && (
+            <div className="mt-3 pt-3 border-t border-border animate-in slide-in-from-top-2 duration-200">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <FilterSelect
+                  label="Group By"
+                  value={safeFilters.groupBy}
+                  onChange={(value) => updateFilter("groupBy", value as GroupByMode)}
+                  options={[
+                    { label: "Trader", value: "trader" },
+                    { label: "Map", value: "map" },
+                    { label: "Raid Type", value: "oneRound" },
+                  ]}
+                />
+                <FilterSelect
+                  label="Trader"
+                  value={safeFilters.trader}
+                  onChange={(value) => updateFilter("trader", value)}
+                  options={[
+                    { label: "All Traders", value: ALL_FILTER_VALUE },
+                    ...data.filters.traders.map((value) => ({ label: value, value })),
+                  ]}
+                />
+                <FilterSelect
+                  label="Map"
+                  value={safeFilters.map}
+                  onChange={(value) => updateFilter("map", value)}
+                  options={[
+                    { label: "All Maps", value: ALL_FILTER_VALUE },
+                    ...data.filters.maps.map((value) => ({ label: value, value })),
+                  ]}
+                />
+                <FilterSelect
+                  label="Item Type"
+                  value={safeFilters.itemType}
+                  onChange={(value) => updateFilter("itemType", value)}
+                  options={[
+                    { label: "All Items", value: ALL_FILTER_VALUE },
+                    ...data.filters.itemTypes.map((value) => ({ label: value, value })),
+                  ]}
+                />
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Button variant="ghost" size="sm" onClick={resetFilters}>
+                  Reset All
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Expanded Filters */}
-        {showFilters && (
-          <div className="mt-4 p-5 rounded-2xl bg-card border border-border animate-in slide-in-from-top-2 duration-200">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <FilterSelect
-                label="Group By"
-                value={safeFilters.groupBy}
-                onChange={(value) => updateFilter("groupBy", value as GroupByMode)}
-                options={[
-                  { label: "Trader", value: "trader" },
-                  { label: "Primary Map", value: "map" },
-                  { label: "One-Round", value: "oneRound" },
-                ]}
-              />
-              <FilterSelect
-                label="Trader"
-                value={safeFilters.trader}
-                onChange={(value) => updateFilter("trader", value)}
-                options={[
-                  { label: "All Traders", value: ALL_FILTER_VALUE },
-                  ...data.filters.traders.map((value) => ({ label: value, value })),
-                ]}
-              />
-              <FilterSelect
-                label="Map"
-                value={safeFilters.map}
-                onChange={(value) => updateFilter("map", value)}
-                options={[
-                  { label: "All Maps", value: ALL_FILTER_VALUE },
-                  ...data.filters.maps.map((value) => ({ label: value, value })),
-                ]}
-              />
-              <FilterSelect
-                label="Item Type"
-                value={safeFilters.itemType}
-                onChange={(value) => updateFilter("itemType", value)}
-                options={[
-                  { label: "All Items", value: ALL_FILTER_VALUE },
-                  ...data.filters.itemTypes.map((value) => ({ label: value, value })),
-                ]}
-              />
-            </div>
-            <div className="mt-4 flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={resetFilters} className="rounded-xl">
-                Reset All
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Quest Grid */}
-      <div className="mt-8 space-y-10">
+      {/* Quest Grid/List */}
+      <main className="px-4 py-6 md:px-6">
         {groupedQuests.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 px-6 rounded-3xl bg-card border border-border">
-            <div className="size-20 rounded-3xl bg-muted flex items-center justify-center mb-6">
-              <Sparkles className="size-10 text-muted-foreground" />
-            </div>
-            <h3 className="text-2xl font-bold text-foreground mb-2">No Quests Found</h3>
-            <p className="text-muted-foreground mb-6 text-center max-w-md">
-              Try adjusting your filters or search terms to discover more missions.
-            </p>
-            <Button onClick={resetFilters} className="rounded-2xl">
-              Clear Filters
-            </Button>
-          </div>
+          <EmptyState onReset={resetFilters} />
         ) : (
-          groupedQuests.map(([groupName, quests]) => (
-            <section key={groupName}>
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <UserRound className="size-5 text-primary" />
+          <div className="space-y-8">
+            {groupedQuests.map(([groupName, quests]) => (
+              <section key={groupName}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="size-8 rounded bg-primary/10 flex items-center justify-center">
+                    <Target className="size-4 text-primary" />
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold font-[family-name:var(--font-quest-display)]">
-                      {groupName}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">{quests.length} quests available</p>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold">{groupName}</h2>
+                    <p className="text-xs text-muted-foreground">{quests.length} contracts</p>
                   </div>
                 </div>
-              </div>
-              
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {quests.map((quest, idx) => {
-                  const isPinned = pinnedSet.has(quest.id);
-                  const isCompleted = completedSet.has(quest.id);
-                  const requirementChips = summarizeItems(quest.requiredItems, 2);
-                  const rewardChips = summarizeItems(quest.rewardItems, 2);
 
-                  return (
-                    <QuestCard
-                      key={quest.id}
-                      quest={quest}
-                      index={idx}
-                      isPinned={isPinned}
-                      isCompleted={isCompleted}
-                      requirementChips={requirementChips}
-                      rewardChips={rewardChips}
-                      onOpen={() => setSelectedQuestId(quest.id)}
-                      onTogglePinned={() => togglePinned(quest.id)}
-                      onToggleCompleted={() => toggleCompleted(quest.id)}
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          ))
+                {viewMode === "grid" ? (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {quests.map((quest) => (
+                      <QuestCard
+                        key={quest.id}
+                        quest={quest}
+                        isPinned={pinnedSet.has(quest.id)}
+                        isCompleted={completedSet.has(quest.id)}
+                        onOpen={() => setSelectedQuestId(quest.id)}
+                        onTogglePinned={() => togglePinned(quest.id)}
+                        onToggleCompleted={() => toggleCompleted(quest.id)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {quests.map((quest) => (
+                      <QuestListItem
+                        key={quest.id}
+                        quest={quest}
+                        isPinned={pinnedSet.has(quest.id)}
+                        isCompleted={completedSet.has(quest.id)}
+                        onOpen={() => setSelectedQuestId(quest.id)}
+                        onTogglePinned={() => togglePinned(quest.id)}
+                        onToggleCompleted={() => toggleCompleted(quest.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            ))}
+          </div>
         )}
-      </div>
+      </main>
 
-      {/* Quest Detail Drawer */}
+      {/* Quest Detail Panel */}
       {selectedQuest && (
-        <QuestDetailDrawer
+        <QuestDetailPanel
           quest={selectedQuest}
           pinned={pinnedSet.has(selectedQuest.id)}
           completed={completedSet.has(selectedQuest.id)}
@@ -464,30 +464,32 @@ export function QuestVisualizer({ data }: QuestVisualizerProps) {
   );
 }
 
-interface StatCardProps {
-  icon: React.ReactNode;
-  value: number;
-  label: string;
-  color: "primary" | "teal" | "amber" | "emerald";
-}
-
-function StatCard({ icon, value, label, color }: StatCardProps) {
-  const colorClasses = {
-    primary: "bg-primary/20 text-primary",
-    teal: "bg-teal-500/20 text-teal-400",
-    amber: "bg-amber-500/20 text-amber-400",
-    emerald: "bg-emerald-500/20 text-emerald-400",
-  };
-
+function StatBlock({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
   return (
-    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-      <div className={cn("size-10 rounded-xl flex items-center justify-center mb-3", colorClasses[color])}>
-        {icon}
-      </div>
-      <p className="text-3xl font-bold text-white font-[family-name:var(--font-quest-display)]">
+    <div className="text-center py-3 px-2 bg-secondary/50 rounded-md border border-border">
+      <p className={cn("text-2xl md:text-3xl font-bold font-mono", accent && "text-primary")}>
         {value}
       </p>
-      <p className="text-sm text-white/60">{label}</p>
+      <p className="text-[10px] md:text-xs font-mono uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+    </div>
+  );
+}
+
+function EmptyState({ onReset }: { onReset: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+      <div className="size-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+        <Sparkles className="size-8 text-muted-foreground" />
+      </div>
+      <h3 className="text-xl font-semibold mb-2">No Missions Found</h3>
+      <p className="text-muted-foreground mb-4 max-w-md text-sm">
+        Adjust your filters or search terms to find contracts.
+      </p>
+      <Button variant="outline" size="sm" onClick={onReset}>
+        Clear Filters
+      </Button>
     </div>
   );
 }
@@ -501,10 +503,10 @@ interface FilterSelectProps {
 
 function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
   return (
-    <label className="space-y-2">
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+    <label className="space-y-1.5">
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
       <select
-        className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+        className="w-full h-9 px-3 text-sm rounded-md border border-border bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >
@@ -520,11 +522,8 @@ function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
 
 interface QuestCardProps {
   quest: QuestRecord;
-  index: number;
   isPinned: boolean;
   isCompleted: boolean;
-  requirementChips: string[];
-  rewardChips: string[];
   onOpen: () => void;
   onTogglePinned: () => void;
   onToggleCompleted: () => void;
@@ -532,75 +531,73 @@ interface QuestCardProps {
 
 function QuestCard({
   quest,
-  index,
   isPinned,
   isCompleted,
-  requirementChips,
-  rewardChips,
   onOpen,
   onTogglePinned,
   onToggleCompleted,
 }: QuestCardProps) {
-  const image = getQuestImage(quest, index);
-  const hasActualImage = Boolean(quest.imageUrl || quest.trader?.iconUrl || quest.maps[0]?.imageUrl);
+  const image = getQuestImage(quest);
+  const rewardChips = summarizeItems(quest.rewardItems, 2);
 
   return (
-    <div
+    <article
       className={cn(
-        "group relative overflow-hidden rounded-3xl bg-card border border-border transition-all duration-300",
-        "hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1",
-        isCompleted && "border-emerald-500/30 bg-emerald-500/5"
+        "group relative bg-card border border-border rounded-lg overflow-hidden transition-all duration-200",
+        "hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5",
+        isCompleted && "opacity-60"
       )}
     >
-      {/* Image Header */}
-      <div className="relative h-44 overflow-hidden">
-        <Image
-          src={image}
-          alt={quest.title}
-          fill
-          className={cn(
-            "object-cover transition-transform duration-500 group-hover:scale-105",
-            !hasActualImage && "grayscale-[30%]"
-          )}
-          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
-        
+      {/* Image or Placeholder */}
+      <div className="relative h-32 bg-secondary overflow-hidden">
+        {image ? (
+          <Image
+            src={image}
+            alt={quest.title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
+            <Target className="size-12 text-muted-foreground/30" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+
         {/* Badges */}
-        <div className="absolute top-3 left-3 flex gap-2">
+        <div className="absolute top-2 left-2 flex gap-1.5">
           {isPinned && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 text-white text-xs font-semibold">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-primary text-primary-foreground text-[10px] font-semibold uppercase">
               <Star className="size-3 fill-current" />
-              Pinned
+              Tracked
             </span>
           )}
           {quest.oneRound && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/90 text-white text-xs font-semibold">
-              <Zap className="size-3" />
+            <span className="px-2 py-0.5 rounded bg-accent text-accent-foreground text-[10px] font-semibold uppercase">
               Quick
             </span>
           )}
         </div>
 
-        {/* Completion Badge */}
         {isCompleted && (
-          <div className="absolute top-3 right-3">
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/90 text-white text-xs font-semibold">
-              <CheckCircle2 className="size-3" />
+          <div className="absolute top-2 right-2">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-accent text-accent-foreground text-[10px] font-semibold uppercase">
+              <Check className="size-3" />
               Done
             </span>
           </div>
         )}
 
-        {/* Trader Avatar */}
+        {/* Trader Icon */}
         {quest.trader?.iconUrl && (
-          <div className="absolute bottom-3 left-3">
-            <div className="size-12 rounded-xl border-2 border-card overflow-hidden shadow-lg">
+          <div className="absolute bottom-2 left-2">
+            <div className="size-10 rounded border-2 border-card overflow-hidden bg-card shadow-md">
               <Image
                 src={quest.trader.iconUrl}
                 alt={quest.trader.name ?? "Trader"}
-                width={48}
-                height={48}
+                width={40}
+                height={40}
                 className="size-full object-cover"
               />
             </div>
@@ -609,97 +606,181 @@ function QuestCard({
       </div>
 
       {/* Content */}
-      <div className="p-5">
+      <div className="p-3">
         <button type="button" className="w-full text-left" onClick={onOpen}>
-          <h3 className="text-lg font-bold leading-tight mb-2 group-hover:text-primary transition-colors line-clamp-2">
+          <h3 className="font-semibold text-sm leading-snug mb-1.5 line-clamp-2 group-hover:text-primary transition-colors">
             {quest.title}
           </h3>
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-            {quest.description ?? "Embark on this mission to earn rewards and reputation."}
-          </p>
 
-          {/* Meta Tags */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium">
+          {/* Meta */}
+          <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground mb-2">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary">
               <MapPin className="size-3" />
               {quest.maps[0]?.name ?? "Unknown"}
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary">
               <Target className="size-3" />
-              {quest.steps.length} Steps
+              {quest.steps.length} obj
             </span>
             {quest.xpReward && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-medium">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-primary">
                 <Zap className="size-3" />
                 {quest.xpReward} XP
               </span>
             )}
           </div>
 
-          {/* Requirements & Rewards Preview */}
-          {(requirementChips.length > 0 || rewardChips.length > 0) && (
-            <div className="space-y-2 mb-4">
-              {requirementChips.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <Package className="size-4 text-amber-500 shrink-0" />
-                  <span className="text-xs text-muted-foreground truncate">
-                    {requirementChips.join(", ")}
-                  </span>
-                </div>
-              )}
-              {rewardChips.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <Gift className="size-4 text-teal-500 shrink-0" />
-                  <span className="text-xs text-muted-foreground truncate">
-                    {rewardChips.join(", ")}
-                  </span>
-                </div>
-              )}
-            </div>
+          {/* Rewards Preview */}
+          {rewardChips.length > 0 && (
+            <p className="text-[10px] text-muted-foreground truncate">
+              <span className="text-accent font-medium">Rewards:</span> {rewardChips.join(", ")}
+            </p>
           )}
-
-          <div className="flex items-center text-sm text-primary font-medium group-hover:gap-2 transition-all">
-            View Details
-            <ChevronRight className="size-4 ml-1 group-hover:translate-x-1 transition-transform" />
-          </div>
         </button>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2 mt-4 pt-4 border-t border-border">
+        {/* Actions */}
+        <div className="flex gap-1.5 mt-3 pt-3 border-t border-border">
           <Button
             variant={isPinned ? "default" : "outline"}
             size="sm"
-            className="flex-1 rounded-xl"
+            className="flex-1 h-7 text-xs"
             onClick={(e) => { e.stopPropagation(); onTogglePinned(); }}
           >
-            <Star className={cn("size-4 mr-1.5", isPinned && "fill-current")} />
-            {isPinned ? "Pinned" : "Pin"}
+            <Star className={cn("size-3 mr-1", isPinned && "fill-current")} />
+            {isPinned ? "Tracked" : "Track"}
           </Button>
           <Button
             variant={isCompleted ? "default" : "outline"}
             size="sm"
-            className={cn("flex-1 rounded-xl", isCompleted && "bg-emerald-500 hover:bg-emerald-600")}
+            className={cn("flex-1 h-7 text-xs", isCompleted && "bg-accent hover:bg-accent/90 text-accent-foreground")}
             onClick={(e) => { e.stopPropagation(); onToggleCompleted(); }}
           >
             {isCompleted ? (
               <>
-                <CheckCircle2 className="size-4 mr-1.5" />
+                <Check className="size-3 mr-1" />
                 Done
               </>
             ) : (
               <>
-                <Circle className="size-4 mr-1.5" />
-                Complete
+                <Circle className="size-3 mr-1" />
+                Clear
               </>
             )}
           </Button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 
-interface QuestDetailDrawerProps {
+interface QuestListItemProps {
+  quest: QuestRecord;
+  isPinned: boolean;
+  isCompleted: boolean;
+  onOpen: () => void;
+  onTogglePinned: () => void;
+  onToggleCompleted: () => void;
+}
+
+function QuestListItem({
+  quest,
+  isPinned,
+  isCompleted,
+  onOpen,
+  onTogglePinned,
+  onToggleCompleted,
+}: QuestListItemProps) {
+  const image = getQuestImage(quest);
+
+  return (
+    <article
+      className={cn(
+        "group flex items-center gap-3 p-3 bg-card border border-border rounded-lg transition-all duration-200",
+        "hover:border-primary/50 hover:shadow-md",
+        isCompleted && "opacity-60"
+      )}
+    >
+      {/* Image */}
+      <div className="relative size-14 rounded overflow-hidden bg-secondary shrink-0">
+        {image ? (
+          <Image
+            src={image}
+            alt={quest.title}
+            fill
+            className="object-cover"
+            sizes="56px"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Target className="size-6 text-muted-foreground/30" />
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <button type="button" className="flex-1 min-w-0 text-left" onClick={onOpen}>
+        <div className="flex items-center gap-2 mb-0.5">
+          <h3 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+            {quest.title}
+          </h3>
+          {isPinned && <Star className="size-3.5 text-primary fill-primary shrink-0" />}
+          {isCompleted && <Check className="size-3.5 text-accent shrink-0" />}
+          {quest.oneRound && (
+            <span className="px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[10px] font-semibold shrink-0">
+              Quick
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{quest.trader?.name ?? "Unknown"}</span>
+          <span className="text-border">|</span>
+          <span>{quest.maps[0]?.name ?? "Unknown"}</span>
+          <span className="text-border">|</span>
+          <span>{quest.steps.length} objectives</span>
+          {quest.xpReward && (
+            <>
+              <span className="text-border">|</span>
+              <span className="text-primary">{quest.xpReward} XP</span>
+            </>
+          )}
+        </div>
+      </button>
+
+      {/* Actions */}
+      <div className="flex gap-1.5 shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          onClick={(e) => { e.stopPropagation(); onTogglePinned(); }}
+          title={isPinned ? "Untrack" : "Track"}
+        >
+          <Star className={cn("size-4", isPinned && "fill-primary text-primary")} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          onClick={(e) => { e.stopPropagation(); onToggleCompleted(); }}
+          title={isCompleted ? "Mark incomplete" : "Mark complete"}
+        >
+          <Check className={cn("size-4", isCompleted && "text-accent")} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          onClick={onOpen}
+          title="View details"
+        >
+          <ChevronRight className="size-4" />
+        </Button>
+      </div>
+    </article>
+  );
+}
+
+interface QuestDetailPanelProps {
   quest: QuestRecord;
   pinned: boolean;
   completed: boolean;
@@ -708,92 +789,97 @@ interface QuestDetailDrawerProps {
   onToggleCompleted: () => void;
 }
 
-function QuestDetailDrawer({
+function QuestDetailPanel({
   quest,
   pinned,
   completed,
   onClose,
   onTogglePinned,
   onToggleCompleted,
-}: QuestDetailDrawerProps) {
+}: QuestDetailPanelProps) {
   const image = getQuestImage(quest);
 
   return (
-    <div 
-      className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" 
+    <div
+      className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <aside
-        className="absolute right-0 top-0 h-full w-full max-w-2xl overflow-y-auto bg-card border-l border-border shadow-2xl animate-in slide-in-from-right duration-300"
+        className="absolute right-0 top-0 h-full w-full max-w-lg overflow-y-auto bg-card border-l border-border shadow-2xl animate-in slide-in-from-right duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Image */}
-        <div className="relative h-64">
-          <Image
-            src={image}
-            alt={quest.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 672px"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/70 to-transparent" />
-          
+        {/* Header */}
+        <div className="relative">
+          {image ? (
+            <div className="relative h-48">
+              <Image
+                src={image}
+                alt={quest.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 512px) 100vw, 512px"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
+            </div>
+          ) : (
+            <div className="h-32 bg-gradient-to-br from-secondary to-muted flex items-center justify-center">
+              <Target className="size-16 text-muted-foreground/20" />
+            </div>
+          )}
+
           <Button
             variant="outline"
             size="icon"
             className="absolute top-4 right-4 rounded-full bg-card/80 backdrop-blur-sm"
             onClick={onClose}
           >
-            <X className="size-5" />
+            <X className="size-4" />
           </Button>
 
-          <div className="absolute bottom-6 left-6 right-6">
+          <div className="absolute bottom-0 left-0 right-0 p-4">
             <div className="flex items-center gap-2 mb-2">
               {quest.oneRound && (
-                <span className="px-2.5 py-1 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                  One-Round
+                <span className="px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs font-semibold">
+                  Single Raid
                 </span>
               )}
               {completed && (
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500 text-white text-xs font-semibold">
+                <span className="px-2 py-0.5 rounded bg-accent text-accent-foreground text-xs font-semibold">
                   Completed
                 </span>
               )}
             </div>
-            <h2 className="text-3xl font-bold text-foreground font-[family-name:var(--font-quest-display)]">
-              {quest.title}
-            </h2>
-            <p className="text-muted-foreground mt-1">
+            <h2 className="text-2xl font-bold">{quest.title}</h2>
+            <p className="text-sm text-muted-foreground">
               {quest.trader?.name ?? "Unknown Trader"}
-              {quest.trader?.type && ` - ${quest.trader.type}`}
             </p>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Action Buttons */}
-          <div className="flex gap-3">
+        <div className="p-4 space-y-4">
+          {/* Actions */}
+          <div className="flex gap-2">
             <Button
               variant={pinned ? "default" : "outline"}
-              className="flex-1 rounded-xl h-12"
+              className="flex-1"
               onClick={onTogglePinned}
             >
-              <Star className={cn("size-5 mr-2", pinned && "fill-current")} />
-              {pinned ? "Pinned" : "Pin Quest"}
+              <Star className={cn("size-4 mr-2", pinned && "fill-current")} />
+              {pinned ? "Tracking" : "Track Mission"}
             </Button>
             <Button
               variant={completed ? "default" : "outline"}
-              className={cn("flex-1 rounded-xl h-12", completed && "bg-emerald-500 hover:bg-emerald-600")}
+              className={cn("flex-1", completed && "bg-accent hover:bg-accent/90 text-accent-foreground")}
               onClick={onToggleCompleted}
             >
               {completed ? (
                 <>
-                  <CheckCircle2 className="size-5 mr-2" />
+                  <Check className="size-4 mr-2" />
                   Completed
                 </>
               ) : (
                 <>
-                  <Circle className="size-5 mr-2" />
+                  <Circle className="size-4 mr-2" />
                   Mark Complete
                 </>
               )}
@@ -801,59 +887,54 @@ function QuestDetailDrawer({
           </div>
 
           {/* Description */}
-          <div className="rounded-2xl bg-secondary/50 p-5">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-              Mission Briefing
+          <div className="p-4 rounded-lg bg-secondary/50 border border-border">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              Mission Brief
             </h3>
-            <p className="text-foreground leading-relaxed">
-              {quest.description ?? "Complete this mission to progress and earn rewards. Check the objectives below for specific requirements."}
+            <p className="text-sm leading-relaxed">
+              {quest.description ?? "Complete this contract to progress and earn rewards."}
             </p>
-            
-            <div className="flex flex-wrap gap-2 mt-4">
+
+            <div className="flex flex-wrap gap-2 mt-3">
               {formatDate(quest.updatedAt) && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card text-muted-foreground text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-card text-xs text-muted-foreground">
                   <CalendarClock className="size-3" />
                   Updated {formatDate(quest.updatedAt)}
                 </span>
               )}
               {quest.xpReward && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium">
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-primary/10 text-primary text-xs font-medium">
                   <Zap className="size-3" />
-                  {quest.xpReward} XP Reward
+                  {quest.xpReward} XP
                 </span>
               )}
             </div>
           </div>
 
-          {/* Steps */}
+          {/* Objectives */}
           {quest.steps.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                Objectives
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                Objectives ({quest.steps.length})
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {quest.steps.map((step, idx) => (
                   <div
                     key={`step-${step.index}`}
-                    className="flex gap-4 p-4 rounded-2xl bg-secondary/50 border border-border"
+                    className="flex gap-3 p-3 rounded-lg bg-secondary/50 border border-border"
                   >
-                    <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">
+                    <div className="size-6 rounded bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
                       {idx + 1}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">{step.title}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {step.amount && (
-                          <span className="text-xs text-muted-foreground">
-                            Amount: {step.amount}
-                          </span>
-                        )}
-                        {step.relatedLocationTypes.length > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            Location: {step.relatedLocationTypes.join(", ")}
-                          </span>
-                        )}
-                      </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{step.title}</p>
+                      {(step.amount || step.relatedLocationTypes.length > 0) && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {step.amount && `Qty: ${step.amount}`}
+                          {step.amount && step.relatedLocationTypes.length > 0 && " | "}
+                          {step.relatedLocationTypes.length > 0 && `Location: ${step.relatedLocationTypes.join(", ")}`}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -864,97 +945,85 @@ function QuestDetailDrawer({
           {/* Maps */}
           {quest.maps.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                 Locations
               </h3>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-wrap gap-2">
                 {quest.maps.map((map) => (
-                  <div
+                  <span
                     key={map.id}
-                    className="relative overflow-hidden rounded-2xl bg-secondary/50 border border-border p-4"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border text-sm"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <MapPin className="size-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{map.name}</p>
-                        {map.locked === false && (
-                          <p className="text-xs text-emerald-500">Unlocked</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                    <MapPin className="size-3.5 text-primary" />
+                    {map.name}
+                  </span>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Requirements, Rewards, Granted */}
-          <div className="grid gap-4 sm:grid-cols-3">
-            <ItemSection title="Requirements" items={quest.requiredItems} color="amber" />
-            <ItemSection title="Rewards" items={quest.rewardItems} color="teal" />
-            <ItemSection title="Granted" items={quest.grantedItems} color="emerald" />
+          {/* Items Grid */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ItemList title="Requirements" items={quest.requiredItems} type="requirement" />
+            <ItemList title="Rewards" items={quest.rewardItems} type="reward" />
           </div>
+
+          {quest.grantedItems.length > 0 && (
+            <ItemList title="Granted Items" items={quest.grantedItems} type="granted" />
+          )}
         </div>
       </aside>
     </div>
   );
 }
 
-interface ItemSectionProps {
+interface ItemListProps {
   title: string;
   items: QuestItemRef[];
-  color: "amber" | "teal" | "emerald";
+  type: "requirement" | "reward" | "granted";
 }
 
-function ItemSection({ title, items, color }: ItemSectionProps) {
-  const iconColors = {
-    amber: "text-amber-500",
-    teal: "text-teal-500",
-    emerald: "text-emerald-500",
-  };
+function ItemList({ title, items, type }: ItemListProps) {
+  const iconClass = {
+    requirement: "text-amber-500",
+    reward: "text-accent",
+    granted: "text-primary",
+  }[type];
 
-  const bgColors = {
-    amber: "bg-amber-500/10",
-    teal: "bg-teal-500/10",
-    emerald: "bg-emerald-500/10",
-  };
+  const Icon = type === "requirement" ? Package : type === "reward" ? Trophy : Sparkles;
 
   return (
-    <div className="rounded-2xl bg-secondary/50 border border-border p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <div className={cn("size-8 rounded-lg flex items-center justify-center", bgColors[color])}>
-          {color === "amber" && <Package className={cn("size-4", iconColors[color])} />}
-          {color === "teal" && <Gift className={cn("size-4", iconColors[color])} />}
-          {color === "emerald" && <Sparkles className={cn("size-4", iconColors[color])} />}
-        </div>
-        <h4 className="font-semibold text-sm">{title}</h4>
+    <div className="p-3 rounded-lg bg-secondary/50 border border-border">
+      <div className="flex items-center gap-2 mb-2">
+        <Icon className={cn("size-4", iconClass)} />
+        <h4 className="text-xs font-semibold uppercase tracking-wide">{title}</h4>
         <span className="ml-auto text-xs text-muted-foreground">{items.length}</span>
       </div>
-      
+
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">None</p>
+        <p className="text-xs text-muted-foreground">None</p>
       ) : (
-        <div className="space-y-2">
-          {items.slice(0, 4).map((item) => (
+        <div className="space-y-1.5">
+          {items.slice(0, 5).map((item) => (
             <div key={`${title}-${item.id}`} className="flex items-center gap-2">
               {item.iconUrl ? (
                 <Image
                   src={item.iconUrl}
                   alt={item.name}
-                  width={24}
-                  height={24}
-                  className="rounded-md border border-border"
+                  width={20}
+                  height={20}
+                  className="rounded border border-border"
                 />
               ) : (
-                <div className={cn("size-6 rounded-md", bgColors[color])} />
+                <div className="size-5 rounded bg-muted border border-border" />
               )}
-              <span className="text-sm truncate flex-1">{item.amount}x {item.name}</span>
+              <span className="text-xs truncate flex-1">
+                {item.amount}x {item.name}
+              </span>
             </div>
           ))}
-          {items.length > 4 && (
-            <p className="text-xs text-muted-foreground">+{items.length - 4} more</p>
+          {items.length > 5 && (
+            <p className="text-xs text-muted-foreground">+{items.length - 5} more</p>
           )}
         </div>
       )}

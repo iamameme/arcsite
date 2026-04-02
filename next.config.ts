@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
         hostname: "ardb.app",
         pathname: "/static/**",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
   },
 };
