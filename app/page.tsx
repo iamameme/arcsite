@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { ArrowRight, Database, LineChart, PackageCheck } from "lucide-react";
+import { ArrowRight, Compass, Database, LineChart, PackageCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -24,6 +24,11 @@ export default async function Home() {
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Button asChild>
+            <Link href="/quests">
+              Open quest visualizer <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
             <Link href="/charts">
               Open chart examples <ArrowRight className="size-4" />
             </Link>
@@ -34,7 +39,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -46,6 +51,19 @@ export default async function Home() {
             <code className="font-mono text-xs">db/client.ts</code> and{" "}
             <code className="font-mono text-xs">db/schema.ts</code> are wired and ready for
             migrations.
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Compass className="size-4 text-primary" />
+              ARDB Quest Visualizer
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Explore live quest data from ARDB at{" "}
+            <code className="font-mono text-xs">/quests</code> with grouping, filters, and local
+            completion tracking.
           </CardContent>
         </Card>
         <Card>
